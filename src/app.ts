@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import http from "http";
+import rankingRoutes from "./routes/rankingRoutes.js";
 
 dotenv.config();
 
@@ -21,5 +22,7 @@ app.use(cors(corsOptions));
 app.get("/", (req, res) => {
   res.send("Hello World");
 });
+
+app.use("/ranking", rankingRoutes);
 
 export { app, server };

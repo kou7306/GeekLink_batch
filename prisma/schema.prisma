@@ -41,6 +41,8 @@ model users {
   image_url           String?
   qiita_access_token  String?
   github_access_token String?
+  github_username     String?
+  Event               Event[]
 
   @@schema("public")
 }
@@ -97,6 +99,8 @@ model Event {
   requirements     String
   updated_at       DateTime? @db.Timestamptz(6)
   deadline         DateTime  @db.Timestamptz(6)
+  techs            String[]
+  users            users     @relation(fields: [owner_id], references: [user_id], onDelete: Cascade)
 
   @@schema("public")
 }
@@ -413,6 +417,39 @@ model auth_users {
   @@index([is_anonymous])
   @@map("users")
   @@schema("auth")
+}
+
+model DailyGithubContributionRanking {
+  id                 BigInt    @id @default(autoincrement())
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime? @default(now()) @db.Timestamp(6)
+  user_id            String?   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contribution_count Int?
+  rank               Int?
+
+  @@schema("public")
+}
+
+model MonthlyGithubContributionRanking {
+  id                 BigInt    @id @default(autoincrement())
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime? @default(now()) @db.Timestamptz(6)
+  user_id            String?   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contribution_count Int?
+  rank               Int?
+
+  @@schema("public")
+}
+
+model WeeklyGithubContributionRanking {
+  id                 BigInt    @id @default(autoincrement())
+  created_at         DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at         DateTime? @default(now()) @db.Timestamptz(6)
+  user_id            String?   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  contribution_count Int?
+  rank               Int?
+
+  @@schema("public")
 }
 
 enum aal_level {
