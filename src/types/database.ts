@@ -1,8 +1,8 @@
-import { Match } from "../models/matchModel";
-import { User } from "../models/userModel";
-import { Message } from "../models/messageModel";
-import { Like } from "../models/likeModel";
-import { Event } from "../models/eventModel";
+import { Match } from "../models/matchModel.js";
+import { User } from "../models/userModel.js";
+import { Message } from "../models/messageModel.js";
+import { Like } from "../models/likeModel.js";
+import { Event } from "../models/eventModel.js";
 
 export interface Database {
   public: {
