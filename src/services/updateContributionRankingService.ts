@@ -101,78 +101,6 @@ export const updateContributionRankingService = async (): Promise<{
   }
 };
 
-function rankUsers(
-  allContributions: Array<{
-    user: { user_id: string; github: string }; // githubフィールドを使用
-    contributions: ContributionDay[];
-  }>,
-  endDate: Date,
-  days: number
-): RankedUser[] {
-  const startDate = new Date(endDate.getTime() - days * 24 * 60 * 60 * 1000);
-
-  const rankedUsers = allContributions.map(({ user, contributions }) => {
-    const filteredContributions = contributions.filter(
-      (day) => new Date(day.date) >= startDate && new Date(day.date) <= endDate
-    );
-    const totalContributions = filteredContributions.reduce(
-      (sum, day) => sum + day.contributionCount,
-      0
-    );
-
-    return {
-      user_id: user.user_id,
-      contribution_count: totalContributions,
-    };
-  });
-
-  return rankedUsers.sort(
-    (a, b) => b.contribution_count - a.contribution_count
-  );
-}
-
-async function updateRankingsInDatabase(
-  daily: RankedUser[],
-  weekly: RankedUser[],
-  monthly: RankedUser[]
-) {
-  // DailyGithubContributionRankingに格納
-  await prisma.dailyGithubContributionRanking.deleteMany({});
-  await prisma.dailyGithubContributionRanking.createMany({
-    data: daily.map((user, index) => ({
-      user_id: user.user_id,
-      contribution_count: user.contribution_count,
-      rank: index + 1,
-      created_at: new Date(),
-      updated_at: new Date(),
-    })),
-  });
-
-  // WeeklyGithubContributionRankingに格納
-  await prisma.weeklyGithubContributionRanking.deleteMany({});
-  await prisma.weeklyGithubContributionRanking.createMany({
-    data: weekly.map((user, index) => ({
-      user_id: user.user_id,
-      contribution_count: user.contribution_count,
-      rank: index + 1,
-      created_at: new Date(),
-      updated_at: new Date(),
-    })),
-  });
-
-  // MonthlyGithubContributionRankingに格納
-  await prisma.monthlyGithubContributionRanking.deleteMany({});
-  await prisma.monthlyGithubContributionRanking.createMany({
-    data: monthly.map((user, index) => ({
-      user_id: user.user_id,
-      contribution_count: user.contribution_count,
-      rank: index + 1,
-      created_at: new Date(),
-      updated_at: new Date(),
-    })),
-  });
-}
-
 // 8時間おきに実行するデイリーランキング更新サービス
 export const updateDailyContributionRankingService =
   async (): Promise<void> => {
@@ -256,3 +184,75 @@ export const updateDailyContributionRankingService =
       throw error;
     }
   };
+
+function rankUsers(
+  allContributions: Array<{
+    user: { user_id: string; github: string }; // githubフィールドを使用
+    contributions: ContributionDay[];
+  }>,
+  endDate: Date,
+  days: number
+): RankedUser[] {
+  const startDate = new Date(endDate.getTime() - days * 24 * 60 * 60 * 1000);
+
+  const rankedUsers = allContributions.map(({ user, contributions }) => {
+    const filteredContributions = contributions.filter(
+      (day) => new Date(day.date) >= startDate && new Date(day.date) <= endDate
+    );
+    const totalContributions = filteredContributions.reduce(
+      (sum, day) => sum + day.contributionCount,
+      0
+    );
+
+    return {
+      user_id: user.user_id,
+      contribution_count: totalContributions,
+    };
+  });
+
+  return rankedUsers.sort(
+    (a, b) => b.contribution_count - a.contribution_count
+  );
+}
+
+async function updateRankingsInDatabase(
+  daily: RankedUser[],
+  weekly: RankedUser[],
+  monthly: RankedUser[]
+) {
+  const now = new Date();
+  const jstDate = new Date(now.getTime() + 9 * 60 * 60 * 1000); // UTCから9時間を加算して日本時間に変換
+
+  // DailyGithubContributionRankingに格納
+  await prisma.dailyGithubContributionRanking.deleteMany({});
+  await prisma.dailyGithubContributionRanking.createMany({
+    data: daily.map((user, index) => ({
+      user_id: user.user_id,
+      contribution_count: user.contribution_count,
+      rank: index + 1,
+      updated_at: jstDate, // 日本時間を使用
+    })),
+  });
+
+  // WeeklyGithubContributionRankingに格納
+  await prisma.weeklyGithubContributionRanking.deleteMany({});
+  await prisma.weeklyGithubContributionRanking.createMany({
+    data: weekly.map((user, index) => ({
+      user_id: user.user_id,
+      contribution_count: user.contribution_count,
+      rank: index + 1,
+      updated_at: jstDate, // 日本時間を使用
+    })),
+  });
+
+  // MonthlyGithubContributionRankingに格納
+  await prisma.monthlyGithubContributionRanking.deleteMany({});
+  await prisma.monthlyGithubContributionRanking.createMany({
+    data: monthly.map((user, index) => ({
+      user_id: user.user_id,
+      contribution_count: user.contribution_count,
+      rank: index + 1,
+      updated_at: jstDate, // 日本時間を使用
+    })),
+  });
+}
