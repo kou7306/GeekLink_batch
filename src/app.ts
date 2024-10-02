@@ -20,7 +20,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 // ルートに対するハンドラを追加
 app.get("/", (req, res) => {
-  res.send("Hello World");
+  res.send("Hello World！！");
 });
 
 app.use("/ranking", rankingRoutes);
