@@ -172,3 +172,87 @@ async function updateRankingsInDatabase(
     })),
   });
 }
+
+// 8時間おきに実行するデイリーランキング更新サービス
+export const updateDailyContributionRankingService =
+  async (): Promise<void> => {
+    try {
+      const users = await prisma.users.findMany({
+        where: { github_access_token: { not: null } },
+        select: {
+          user_id: true,
+          github_access_token: true,
+          github: true,
+        },
+      });
+
+      const now = new Date();
+      const todayStart = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate()
+      );
+      const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+
+      const contributionPromises = users.map(async (user) => {
+        const graphqlWithAuth = graphql.defaults({
+          headers: {
+            authorization: `token ${user.github_access_token}`,
+          },
+        });
+
+        const { user: githubUser } = await graphqlWithAuth<{
+          user: {
+            contributionsCollection: {
+              contributionCalendar: {
+                weeks: { contributionDays: ContributionDay[] }[];
+              };
+            };
+          };
+        }>(
+          `
+        query($username: String!, $from: DateTime!, $to: DateTime!) {
+          user(login: $username) {
+            contributionsCollection(from: $from, to: $to) {
+              contributionCalendar {
+                weeks {
+                  contributionDays {
+                    date
+                    contributionCount
+                  }
+                }
+              }
+            }
+          }
+        }
+      `,
+          {
+            username: user.github,
+            from: todayStart.toISOString(),
+            to: todayEnd.toISOString(),
+          }
+        );
+
+        const contributions =
+          githubUser.contributionsCollection.contributionCalendar.weeks.flatMap(
+            (week) => week.contributionDays
+          );
+
+        return {
+          user: {
+            user_id: user.user_id,
+            github: user.github ?? "",
+          },
+          contributions,
+        };
+      });
+
+      const allContributions = await Promise.all(contributionPromises);
+      const dailyRanking = rankUsers(allContributions, now, 1); // 1日のランキングを取得
+
+      await updateRankingsInDatabase(dailyRanking, [], []); // デイリーのみ更新
+    } catch (error) {
+      console.error("Error updating daily contribution ranking:", error);
+      throw error;
+    }
+  };
