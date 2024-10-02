@@ -10,11 +10,11 @@ on:
   workflow_dispatch:
 
 env:
-  SERVICE_NAME: geeklink_batch
+  SERVICE_NAME: geeklink-batch
   PORT: 8080
   GCP_PROJECT_ID: ${{ secrets.PROJECT_ID }}
   GCP_REGION: us-west1
-  IMAGE: gcr.io/${{ secrets.PROJECT_ID }}/geeklink_batch:${{ github.sha }}
+  IMAGE: gcr.io/${{ secrets.PROJECT_ID }}/geeklink-batch:${{ github.sha }}
   SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
   SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
