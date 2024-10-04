@@ -23,6 +23,6 @@ app.get("/", (req, res) => {
   res.send("Hello World！！");
 });
 
-app.use("/ranking", rankingRoutes);
+app.use("/ranking", rankingRoutes);")
 
 export { app, server };
