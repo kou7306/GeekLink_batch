@@ -16,7 +16,7 @@ export const updateRanking = async (req: Request, res: Response) => {
     await updateMonthlyContributionRanking();
     await updateWeeklyContributionStarRanking();
     await updateMonthlyContributionStarRanking();
-    res.status(200).json({ message: "Likes created successfully" });
+    res.status(200).json({ message: "Raning Updated successfully" });
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error", details: error });
   }
@@ -26,7 +26,7 @@ export const updateDailyRanking = async (req: Request, res: Response) => {
   try {
     await updateDailyContributionRanking();
     await updateDailyContributionStarRanking();
-    res.status(200).json({ message: "Likes created successfully" });
+    res.status(200).json({ message: "Raning Updated successfully" });
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error", details: error });
   }

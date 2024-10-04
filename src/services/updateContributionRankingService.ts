@@ -11,30 +11,22 @@ interface RankedUser {
   contribution_count: number;
 }
 
-// デイリーランキングの更新
-export const updateDailyContributionRanking = async (): Promise<
-  RankedUser[]
-> => {
+type RankingPeriod = "daily" | "weekly" | "monthly";
+
+export const updateDailyContributionRanking = (): Promise<RankedUser[]> => {
   return updateContributionRankingService("daily");
 };
 
-// ウィークリーランキングの更新
-export const updateWeeklyContributionRanking = async (): Promise<
-  RankedUser[]
-> => {
+export const updateWeeklyContributionRanking = (): Promise<RankedUser[]> => {
   return updateContributionRankingService("weekly");
 };
 
-// マンスリーランキングの更新
-export const updateMonthlyContributionRanking = async (): Promise<
-  RankedUser[]
-> => {
+export const updateMonthlyContributionRanking = (): Promise<RankedUser[]> => {
   return updateContributionRankingService("monthly");
 };
 
-// ランキングの種類に基づいて更新処理を実行する関数
 export const updateContributionRankingService = async (
-  type: "daily" | "weekly" | "monthly"
+  period: RankingPeriod
 ): Promise<RankedUser[]> => {
   try {
     const users = await prisma.users.findMany({
@@ -42,87 +34,37 @@ export const updateContributionRankingService = async (
       select: {
         user_id: true,
         github_access_token: true,
-        github: true, // usernameをgithubに変更
+        github: true,
       },
     });
 
     const now = new Date();
-    const timeRange = getTimeRange(type, now);
+    const timeRange = getTimeRange(period, now);
 
-    const contributionPromises = users.map(async (user) => {
-      const graphqlWithAuth = graphql.defaults({
-        headers: {
-          authorization: `token ${user.github_access_token}`,
-        },
-      });
-
-      const { user: githubUser } = await graphqlWithAuth<{
-        user: {
-          contributionsCollection: {
-            contributionCalendar: {
-              weeks: { contributionDays: ContributionDay[] }[];
-            };
-          };
-        };
-      }>(
-        `
-        query($username: String!, $from: DateTime!, $to: DateTime!) {
-          user(login: $username) {
-            contributionsCollection(from: $from, to: $to) {
-              contributionCalendar {
-                weeks {
-                  contributionDays {
-                    date
-                    contributionCount
-                  }
-                }
-              }
-            }
-          }
-        }
-      `,
-        {
-          username: user.github,
-          from: timeRange.from.toISOString(),
-          to: timeRange.to.toISOString(),
-        }
-      );
-
-      const contributions =
-        githubUser.contributionsCollection.contributionCalendar.weeks.flatMap(
-          (week) => week.contributionDays
-        );
-
-      return {
-        user: {
-          user_id: user.user_id,
-          github: user.github ?? "",
-        },
-        contributions,
-      };
-    });
+    const contributionPromises = users.map((user) =>
+      fetchUserContributions(user, timeRange)
+    );
 
     const allContributions = await Promise.all(contributionPromises);
     const ranking = rankUsers(allContributions, timeRange.to, timeRange.days);
 
-    await updateRankingInDatabase(type, ranking);
+    await updateRankingInDatabase(ranking, period);
 
-    return ranking.slice(0, 5); // 上位5人のユーザーを返す
+    return ranking.slice(0, 5); // Return top 5 users
   } catch (error) {
-    console.error("Error updating contribution ranking:", error);
+    console.error(`Error updating ${period} contribution ranking:`, error);
     throw error;
   }
 };
 
-// タイプに応じて時間範囲を計算する関数
-function getTimeRange(type: "daily" | "weekly" | "monthly", now: Date) {
+function getTimeRange(period: RankingPeriod, now: Date) {
   const to = now;
   let from: Date;
   let days: number;
 
-  switch (type) {
+  switch (period) {
     case "daily":
-      from = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
+      from = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       days = 1;
       break;
     case "weekly":
@@ -133,14 +75,74 @@ function getTimeRange(type: "daily" | "weekly" | "monthly", now: Date) {
       from = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       days = 30;
       break;
-    default:
-      throw new Error("Invalid ranking type");
   }
 
   return { from, to, days };
 }
 
-// ユーザーのランキングを計算する関数
+async function fetchUserContributions(
+  user: {
+    user_id: string;
+    github_access_token: string | null;
+    github: string | null;
+  },
+  timeRange: { from: Date; to: Date }
+): Promise<{
+  user: { user_id: string; github: string };
+  contributions: ContributionDay[];
+}> {
+  const graphqlWithAuth = graphql.defaults({
+    headers: {
+      authorization: `token ${user.github_access_token}`,
+    },
+  });
+
+  const { user: githubUser } = await graphqlWithAuth<{
+    user: {
+      contributionsCollection: {
+        contributionCalendar: {
+          weeks: { contributionDays: ContributionDay[] }[];
+        };
+      };
+    };
+  }>(
+    `
+    query($username: String!, $from: DateTime!, $to: DateTime!) {
+      user(login: $username) {
+        contributionsCollection(from: $from, to: $to) {
+          contributionCalendar {
+            weeks {
+              contributionDays {
+                date
+                contributionCount
+              }
+            }
+          }
+        }
+      }
+    }
+  `,
+    {
+      username: user.github!,
+      from: timeRange.from.toISOString(),
+      to: timeRange.to.toISOString(),
+    }
+  );
+
+  const contributions =
+    githubUser.contributionsCollection.contributionCalendar.weeks.flatMap(
+      (week) => week.contributionDays
+    );
+
+  return {
+    user: {
+      user_id: user.user_id,
+      github: user.github ?? "",
+    },
+    contributions,
+  };
+}
+
 function rankUsers(
   allContributions: Array<{
     user: { user_id: string; github: string };
@@ -171,42 +173,28 @@ function rankUsers(
   );
 }
 
-// ランキングをデータベースに保存する関数
 async function updateRankingInDatabase(
-  type: "daily" | "weekly" | "monthly",
-  ranking: RankedUser[]
+  ranking: RankedUser[],
+  period: RankingPeriod
 ) {
   const now = new Date();
-  const jstDate = new Date(now.getTime() + 9 * 60 * 60 * 1000); // 日本時間
+  const jstDate = new Date(now.getTime() + 9 * 60 * 60 * 1000); // Convert to JST
 
-  let tableName;
+  const tableName = `${period}GithubContributionStarRanking` as const;
 
-  switch (type) {
-    case "daily":
-      tableName = "dailyGithubContributionRanking";
-      break;
-    case "weekly":
-      tableName = "weeklyGithubContributionRanking";
-      break;
-    case "monthly":
-      tableName = "monthlyGithubContributionRanking";
-      break;
-    default:
-      throw new Error("Invalid ranking type");
+  if (period === "daily") {
+    await prisma.dailyGithubContributionStarRanking.deleteMany({});
+  } else if (period === "weekly") {
+    await prisma.weeklyGithubContributionStarRanking.deleteMany({});
+  } else if (period === "monthly") {
+    await prisma.monthlyGithubContributionStarRanking.deleteMany({});
   }
-
-  // ランキングを削除し、新しいデータを挿入
-  await (prisma[tableName as keyof typeof prisma] as any).deleteMany({});
-  await Promise.all(
-    ranking.map((user, index) =>
-      (prisma[tableName as keyof typeof prisma] as any).create({
-        data: {
-          user_id: user.user_id,
-          contribution_count: user.contribution_count,
-          rank: index + 1,
-          updated_at: jstDate, // 日本時間
-        },
-      })
-    )
-  );
+  await prisma[tableName].createMany({
+    data: ranking.map((user, index) => ({
+      user_id: user.user_id,
+      total_stars: user.contribution_count,
+      rank: index + 1,
+      updated_at: jstDate,
+    })),
+  });
 }
