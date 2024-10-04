@@ -1,5 +1,5 @@
 export type StarRanking = {
-  id: string;
+  id: number;
   created_at: Date;
   updated_at: Date | null;
   user_id: string;
