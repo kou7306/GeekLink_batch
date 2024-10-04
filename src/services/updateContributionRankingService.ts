@@ -11,6 +11,27 @@ interface RankedUser {
   contribution_count: number;
 }
 
+// デイリーランキングの更新
+export const updateDailyContributionRanking = async (): Promise<
+  RankedUser[]
+> => {
+  return updateContributionRankingService("daily");
+};
+
+// ウィークリーランキングの更新
+export const updateWeeklyContributionRanking = async (): Promise<
+  RankedUser[]
+> => {
+  return updateContributionRankingService("weekly");
+};
+
+// マンスリーランキングの更新
+export const updateMonthlyContributionRanking = async (): Promise<
+  RankedUser[]
+> => {
+  return updateContributionRankingService("monthly");
+};
+
 // ランキングの種類に基づいて更新処理を実行する関数
 export const updateContributionRankingService = async (
   type: "daily" | "weekly" | "monthly"
@@ -91,27 +112,6 @@ export const updateContributionRankingService = async (
     console.error("Error updating contribution ranking:", error);
     throw error;
   }
-};
-
-// デイリーランキングの更新
-export const updateDailyContributionRanking = async (): Promise<
-  RankedUser[]
-> => {
-  return updateContributionRankingService("daily");
-};
-
-// ウィークリーランキングの更新
-export const updateWeeklyContributionRanking = async (): Promise<
-  RankedUser[]
-> => {
-  return updateContributionRankingService("weekly");
-};
-
-// マンスリーランキングの更新
-export const updateMonthlyContributionRanking = async (): Promise<
-  RankedUser[]
-> => {
-  return updateContributionRankingService("monthly");
 };
 
 // タイプに応じて時間範囲を計算する関数
@@ -197,12 +197,16 @@ async function updateRankingInDatabase(
 
   // ランキングを削除し、新しいデータを挿入
   await (prisma[tableName as keyof typeof prisma] as any).deleteMany({});
-  await prisma[tableName as keyof typeof prisma as any].createMany({
-    data: ranking.map((user, index) => ({
-      user_id: user.user_id,
-      contribution_count: user.contribution_count,
-      rank: index + 1,
-      updated_at: jstDate, // 日本時間
-    })),
-  });
+  await Promise.all(
+    ranking.map((user, index) =>
+      (prisma[tableName as keyof typeof prisma] as any).create({
+        data: {
+          user_id: user.user_id,
+          contribution_count: user.contribution_count,
+          rank: index + 1,
+          updated_at: jstDate, // 日本時間
+        },
+      })
+    )
+  );
 }
