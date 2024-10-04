@@ -6,7 +6,7 @@
     "jsx": "react-jsx" /* React 17以降の新しいJSX変換を使用 */,
     "rootDir": "./src" /* ソースファイルのルートディレクトリ */,
     "outDir": "dist" /* 出力先ディレクトリ */,
-
+    "allowJs": true,
     /* モジュール解決 */
     "moduleResolution": "node" /* Node.jsのモジュール解決を使用 */,
     "forceConsistentCasingInFileNames": true /* インポート時のファイル名の大文字小文字を一貫させる */,

@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import {
   updateContributionRankingService,
   updateDailyContributionRankingService,
-} from "../services/rankingService.js";
+} from "../services/updateContributionRankingService.js";
 
 export const updateRanking = async (req: Request, res: Response) => {
   try {
