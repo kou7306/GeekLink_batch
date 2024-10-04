@@ -5,6 +5,7 @@ import { Like } from "../models/likeModel.js";
 import { Event } from "../models/eventModel.js";
 import { ContributionRanking } from "../models/contributionRankingModel.js";
 import { StarRanking } from "../models/starRankingModel.js";
+import { QiitaRanking } from "../models/qiitaRankingModel.js";
 
 export interface Database {
   public: {
@@ -41,6 +42,15 @@ export interface Database {
       };
       MonthlyGithubContributionStarRanking: {
         Row: StarRanking;
+      };
+      DailyQiitaRanking: {
+        Row: QiitaRanking;
+      };
+      WeeklyQiitaRanking: {
+        Row: QiitaRanking;
+      };
+      MonthlyQiitaRanking: {
+        Row: QiitaRanking;
       };
     };
   };

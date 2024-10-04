@@ -487,6 +487,42 @@ model WeeklyGithubContributionStarRanking {
   @@schema("public")
 }
 
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model DailyQiitaRanking {
+  id         BigInt    @id @default(autoincrement())
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+  user_id    String?   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  score      Int?
+  rank       Int?
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model MonthlyQiitaRanking {
+  id         BigInt    @id @default(autoincrement())
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+  user_id    String?   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  score      Int?
+  rank       Int?
+
+  @@schema("public")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model WeeklyQiitaRanking {
+  id         BigInt    @id @default(autoincrement())
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at DateTime? @default(now()) @db.Timestamptz(6)
+  user_id    String?   @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  score      Int?
+  rank       Int?
+
+  @@schema("public")
+}
+
 enum aal_level {
   aal1
   aal2

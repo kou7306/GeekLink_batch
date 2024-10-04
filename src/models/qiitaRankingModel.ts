@@ -1,8 +1,8 @@
-export type ContributionRanking = {
+export type QiitaRanking = {
   id: number;
   created_at: Date;
   updated_at: Date | null;
   user_id: string;
-  contribution_count: number;
+  score: number;
   rank: number;
 };
