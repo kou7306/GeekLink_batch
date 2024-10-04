@@ -15,6 +15,19 @@ interface RankedUser {
   score: number;
 }
 
+// 各ランキングの更新関数
+export const updateDailyQiitaRanking = async (): Promise<RankedUser[]> => {
+  return updateQiitaRankingService("daily");
+};
+
+export const updateWeeklyQiitaRanking = async (): Promise<RankedUser[]> => {
+  return updateQiitaRankingService("weekly");
+};
+
+export const updateMonthlyQiitaRanking = async (): Promise<RankedUser[]> => {
+  return updateQiitaRankingService("monthly");
+};
+
 const fetchQiitaUserData = async (
   accessToken: string,
   period: string
@@ -71,7 +84,7 @@ const saveRankingToDatabase = async (ranking: RankedUser[], period: string) => {
   }
 };
 
-const updateContributionRankingService = async (
+const updateQiitaRankingService = async (
   period: string
 ): Promise<RankedUser[]> => {
   const users = await prisma.users.findMany({
@@ -109,25 +122,6 @@ const updateContributionRankingService = async (
   await saveRankingToDatabase(userScores, period); // データベースにランキングを保存
 
   return userScores;
-};
-
-// 各ランキングの更新関数
-export const updateDailyContributionRanking = async (): Promise<
-  RankedUser[]
-> => {
-  return updateContributionRankingService("daily");
-};
-
-export const updateWeeklyContributionRanking = async (): Promise<
-  RankedUser[]
-> => {
-  return updateContributionRankingService("weekly");
-};
-
-export const updateMonthlyContributionRanking = async (): Promise<
-  RankedUser[]
-> => {
-  return updateContributionRankingService("monthly");
 };
 
 // Prismaクライアントをクリーンアップ
