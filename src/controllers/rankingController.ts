@@ -14,6 +14,11 @@ import {
   updateWeeklyQiitaRanking,
   updateMonthlyQiitaRanking,
 } from "../services/updateQiitaRankingService.js";
+import {
+  updateDailyGeekLinkActivityRanking,
+  updateWeeklyGeekLinkActivityRanking,
+  updateMonthlyGeekLinkActivityRanking,
+} from "../services/updateGeekLinkActivityRankingService.js";
 
 export const updateRanking = async (req: Request, res: Response) => {
   try {
@@ -23,6 +28,8 @@ export const updateRanking = async (req: Request, res: Response) => {
     await updateMonthlyContributionStarRanking();
     await updateWeeklyQiitaRanking();
     await updateMonthlyQiitaRanking();
+    await updateWeeklyGeekLinkActivityRanking();
+    await updateMonthlyGeekLinkActivityRanking();
     res.status(200).json({ message: "Raning Updated successfully" });
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error", details: error });
@@ -34,6 +41,7 @@ export const updateDailyRanking = async (req: Request, res: Response) => {
     await updateDailyContributionRanking();
     await updateDailyContributionStarRanking();
     await updateDailyQiitaRanking();
+    await updateDailyGeekLinkActivityRanking();
     res.status(200).json({ message: "Raning Updated successfully" });
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error", details: error });
