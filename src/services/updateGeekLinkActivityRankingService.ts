@@ -76,13 +76,17 @@ const calculateScore = (postCount: number, eventCount: number): number => {
 const saveRankingToDatabase = async (ranking: RankedUser[], period: string) => {
   const currentTime = new Date(Date.now() + JST_OFFSET); // 日本時間に合わせる
 
+  // 古いデータを削除
+  await (prisma as any)[`${period}GeekLinkActivity`].deleteMany({});
+
+  // 新しいランキングデータを挿入
   for (const [index, user] of ranking.entries()) {
     await (prisma as any)[`${period}GeekLinkActivity`].create({
       data: {
         user_id: user.userId,
         activity_score: user.score,
-        rank: index + 1, // ランキングは1から始まる
-        updated_at: currentTime, // updated_atを日本時間で設定
+        rank: index + 1,
+        updated_at: currentTime,
       },
     });
   }
