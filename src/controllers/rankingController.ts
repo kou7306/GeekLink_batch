@@ -20,6 +20,8 @@ import {
   updateMonthlyGeekLinkActivityRanking,
 } from "../services/updateGeekLinkActivityRankingService.js";
 
+import { resetOnlineUsersService } from "../services/resetOnlineUsersService.js";
+
 export const updateRanking = async (req: Request, res: Response) => {
   try {
     await updateWeeklyContributionRanking();
@@ -42,6 +44,8 @@ export const updateDailyRanking = async (req: Request, res: Response) => {
     await updateDailyContributionStarRanking();
     await updateDailyQiitaRanking();
     await updateDailyGeekLinkActivityRanking();
+    // ランキングとは関係ないが、日次処理を行う
+    await resetOnlineUsersService();
     res.status(200).json({ message: "Raning Updated successfully" });
   } catch (error) {
     res.status(500).json({ error: "Internal Server Error", details: error });
